@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "company": "Wajih's Learning Journey",
+    "position": "Teacher/Student",
+    "status": "Lifetime Hired"
+  },
+  {
+    "id": 2,
+    "company": "Google",
+    "position": "Software Engineer Intern",
+    "status": "Applied"
+  },
+  {
+    "id": 3,
+    "company": "Amazon",
+    "position": "Backend Intern",
+    "status": "Interview"
+  }
+]

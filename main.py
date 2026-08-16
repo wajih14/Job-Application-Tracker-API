@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import json
+
 
 app = FastAPI()
 
@@ -8,8 +10,10 @@ class Application(BaseModel):
     position: str
     status: str
 
-applications = []
-id = 1
+with open("test_data.json") as file:
+    applications = json.load(file)
+
+id = 4
 
 @app.get("/")
 def read_root():
@@ -34,3 +38,11 @@ def get_application(application_id: int):
             return application
     raise HTTPException(status_code=404, detail = "Application not found")
 
+@app.delete("/applications/{application_id}")
+def delete_application(application_id: int):
+    for application in applications:
+        if application["id"] == application_id:
+            applications.remove(application)
+            return {"message": "Application deleted"}
+    raise HTTPException(status_code=404, detail = "Application not found")
+    
