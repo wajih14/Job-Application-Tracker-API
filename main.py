@@ -9,6 +9,7 @@ class Application(BaseModel):
     status: str
 
 applications = []
+id = 1
 
 @app.get("/")
 def read_root():
@@ -20,5 +21,8 @@ def get_applications():
 
 @app.post("/applications")
 def create_application(application: Application):
+    global id
+    application = {"id": id, **application.dict()}
+    id += 1
     applications.append(application)
     return application
