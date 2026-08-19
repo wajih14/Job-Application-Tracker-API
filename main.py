@@ -1,9 +1,12 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
+from fastapi.templating import Jinja2Templates
 import json
 
 
 app = FastAPI()
+
+templates = Jinja2Templates(directory = "templates")
 
 class Application(BaseModel):
     company: str
@@ -15,9 +18,9 @@ with open("test_data.json") as file:
 
 id = 4
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
+@app.get("/", include_in_schema=False)
+def home(request: Request):
+    return templates.TemplateResponse(request, "home.html", {"applications": applications, "title": "Home"})
 
 @app.get("/applications")
 def get_applications():
