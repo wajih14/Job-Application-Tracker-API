@@ -65,6 +65,6 @@ def update_application_status(application_id: int, new_status: StatusUpdate):
     for application in applications:
         if application["id"] == application_id:
             application["status"] = new_status.status
-            return {"status": new_status}
+            return application
     raise HTTPException(status_code = 404, detail = "Application not found")
 
