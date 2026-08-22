@@ -57,7 +57,7 @@ async def delete_application(application_id: str, session: AsyncSession = Depend
         post_uuid = uuid.UUID(application_id)
 
         result = await session.execute(select(Application).where(Application.id == post_uuid))
-        application = result.scalars().first()
+        application = result.scalar_one_or_none()
 
         if not application:
             raise HTTPException(status_code=404, detail="Application not found")
@@ -66,5 +66,57 @@ async def delete_application(application_id: str, session: AsyncSession = Depend
         await session.commit()
 
         return {"message": "Application deleted"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/applications/{application_id}")
+async def update_application(
+    application_id: str,
+    new_application: AppSubmit,
+    session: AsyncSession = Depends(get_async_session)
+):
+    try:
+        post_uuid = uuid.UUID(application_id)
+    
+        result = await session.execute(select(Application).where(Application.id == post_uuid))
+        application = result.scalar_one_or_none()
+
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+
+        application.company = new_application.company
+        application.position = new_application.position
+        application.status = new_application.status
+        await session.commit()
+        return application
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.patch("/applications/{application_id}")
+async def update_application_status(
+    application_id: str,
+    new_status: StatusUpdate,
+    session: AsyncSession = Depends(get_async_session)
+):
+    try:
+        post_uuid = uuid.UUID(application_id)
+
+        result = await session.execute(select(Application).where(Application.id == post_uuid))
+        application = result.scalar_one_or_none()
+
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+
+        application.status = new_status.status
+        await session.commit()
+        return application
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
