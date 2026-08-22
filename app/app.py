@@ -1,10 +1,12 @@
+from typing import Literal
 import uuid
-from fastapi import FastAPI, HTTPException, Depends
-from app.schemas import AppSubmit, StatusUpdate
+from fastapi import FastAPI, HTTPException, Depends, Query
+from app.schemas import AppSubmit, StatusUpdate, ApplicationResponse, ApplicationStatus
 from app.db import Application, create_db_and_tables, get_async_session
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
+
 
 
 
@@ -17,7 +19,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-@app.post("/applications")
+@app.post("/applications", response_model=ApplicationResponse)
 async def create_application(
     application: AppSubmit,
     session: AsyncSession = Depends(get_async_session)
@@ -32,31 +34,11 @@ async def create_application(
     await session.refresh(new_application)
     return new_application
 
-@app.get("/applications")
-async def get_applications(
-    session: AsyncSession = Depends(get_async_session)
-):
-    result = await session.execute(select(Application).order_by(Application.created_at.desc()))
-    applications = [row[0] for row in result.all()]
 
-    applications_list = []
-    for application in applications:
-        applications_list.append({
-            "id": str(application.id),
-            "company": application.company,
-            "position": application.position,
-            "status": application.status,
-            "created_at": application.created_at.isoformat()
-        })
-    return {"applications": applications_list}
-
-
-@app.delete("/applications/{application_id}")
-async def delete_application(application_id: str, session: AsyncSession = Depends(get_async_session)):
+@app.delete("/applications/{application_id}", response_model=ApplicationResponse)
+async def delete_application(application_id: uuid.UUID, session: AsyncSession = Depends(get_async_session)):
     try:
-        post_uuid = uuid.UUID(application_id)
-
-        result = await session.execute(select(Application).where(Application.id == post_uuid))
+        result = await session.execute(select(Application).where(Application.id == application_id))
         application = result.scalar_one_or_none()
 
         if not application:
@@ -65,23 +47,21 @@ async def delete_application(application_id: str, session: AsyncSession = Depend
         await session.delete(application)
         await session.commit()
 
-        return {"message": "Application deleted"}
+        return application
     
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.put("/applications/{application_id}")
+@app.put("/applications/{application_id}", response_model=ApplicationResponse)
 async def update_application(
-    application_id: str,
+    application_id: uuid.UUID,
     new_application: AppSubmit,
     session: AsyncSession = Depends(get_async_session)
 ):
     try:
-        post_uuid = uuid.UUID(application_id)
-    
-        result = await session.execute(select(Application).where(Application.id == post_uuid))
+        result = await session.execute(select(Application).where(Application.id == application_id))
         application = result.scalar_one_or_none()
 
         if not application:
@@ -98,16 +78,15 @@ async def update_application(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.patch("/applications/{application_id}")
+@app.patch("/applications/{application_id}", response_model=ApplicationResponse)
 async def update_application_status(
-    application_id: str,
+    application_id: uuid.UUID,
     new_status: StatusUpdate,
     session: AsyncSession = Depends(get_async_session)
 ):
     try:
-        post_uuid = uuid.UUID(application_id)
 
-        result = await session.execute(select(Application).where(Application.id == post_uuid))
+        result = await session.execute(select(Application).where(Application.id == application_id))
         application = result.scalar_one_or_none()
 
         if not application:
@@ -122,14 +101,14 @@ async def update_application_status(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/applications/")
+@app.get("/applications/", response_model=list[ApplicationResponse])
 async def get_applications(
-    status: str | None = None,
+    status: ApplicationStatus | None = None,
     company: str | None = None, 
     position: str | None = None,
-    sort: str| None = None,
-    limit: int | None = None,
-    offset: int | None = None,
+    sort: Literal["newest", "oldest"] | None = None,
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     session: AsyncSession = Depends(get_async_session)):
     try:
         query = select(Application)
@@ -145,25 +124,12 @@ async def get_applications(
             elif sort == "oldest":
                 query = query.order_by(Application.created_at.asc())
 
-        if offset is not None:
-            query = query.offset(offset)
-
-        if limit is not None:
-            query = query.limit(limit)
+        query = query.offset(offset).limit(limit)
         
         result = await session.execute(query)
         applications = result.scalars().all()
 
-        applications_list = []
-        for application in applications:
-            applications_list.append({
-                "id": str(application.id),
-                "company": application.company,
-                "position": application.position,
-                "status": application.status,
-                "created_at": application.created_at.isoformat()
-            })
-        return {"applications": applications_list}
+        return applications
     except HTTPException:
         raise
     except Exception as e:
