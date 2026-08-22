@@ -36,23 +36,20 @@ async def create_application(
 
 
 @app.delete("/applications/{application_id}", response_model=ApplicationResponse)
-async def delete_application(application_id: uuid.UUID, session: AsyncSession = Depends(get_async_session)):
-    try:
-        result = await session.execute(select(Application).where(Application.id == application_id))
-        application = result.scalar_one_or_none()
+async def delete_application(
+    application_id: uuid.UUID,
+    session: AsyncSession = Depends(get_async_session)
+):
+    result = await session.execute(select(Application).where(Application.id == application_id))
+    application = result.scalar_one_or_none()
 
-        if not application:
-            raise HTTPException(status_code=404, detail="Application not found")
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
 
-        await session.delete(application)
-        await session.commit()
+    await session.delete(application)
+    await session.commit()
 
-        return application
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return application
 
 @app.put("/applications/{application_id}", response_model=ApplicationResponse)
 async def update_application(
@@ -60,22 +57,17 @@ async def update_application(
     new_application: AppSubmit,
     session: AsyncSession = Depends(get_async_session)
 ):
-    try:
-        result = await session.execute(select(Application).where(Application.id == application_id))
-        application = result.scalar_one_or_none()
+    result = await session.execute(select(Application).where(Application.id == application_id))
+    application = result.scalar_one_or_none()
 
-        if not application:
-            raise HTTPException(status_code=404, detail="Application not found")
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
 
-        application.company = new_application.company
-        application.position = new_application.position
-        application.status = new_application.status
-        await session.commit()
-        return application
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    application.company = new_application.company
+    application.position = new_application.position
+    application.status = new_application.status
+    await session.commit()
+    return application
 
 
 @app.patch("/applications/{application_id}", response_model=ApplicationResponse)
@@ -84,54 +76,53 @@ async def update_application_status(
     new_status: StatusUpdate,
     session: AsyncSession = Depends(get_async_session)
 ):
-    try:
+    result = await session.execute(select(Application).where(Application.id == application_id))
+    application = result.scalar_one_or_none()
 
-        result = await session.execute(select(Application).where(Application.id == application_id))
-        application = result.scalar_one_or_none()
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
 
-        if not application:
-            raise HTTPException(status_code=404, detail="Application not found")
-
-        application.status = new_status.status
-        await session.commit()
-        return application
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    application.status = new_status.status
+    await session.commit()
+    return application
 
 
-@app.get("/applications/", response_model=list[ApplicationResponse])
+@app.get("/applications/{application_id}", response_model=ApplicationResponse)
+async def get_application(application_id: uuid.UUID, session: AsyncSession = Depends(get_async_session)):
+    result = await session.execute(select(Application).where(Application.id == application_id))
+    application = result.scalar_one_or_none()
+
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    return application
+
+@app.get("/applications", response_model=list[ApplicationResponse])
 async def get_applications(
     status: ApplicationStatus | None = None,
     company: str | None = None, 
     position: str | None = None,
-    sort: Literal["newest", "oldest"] | None = None,
+    sort: Literal["newest", "oldest"] = "newest",
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
     session: AsyncSession = Depends(get_async_session)):
-    try:
-        query = select(Application)
-        if status is not None:
-            query = query.where(Application.status == status)
-        if company is not None:
-            query = query.where(Application.company == company)
-        if position is not None:
-            query = query.where(Application.position == position)
-        if sort is not None:
-            if sort == "newest":
-                query = query.order_by(Application.created_at.desc())
-            elif sort == "oldest":
-                query = query.order_by(Application.created_at.asc())
+    query = select(Application)
+    if status is not None:
+        query = query.where(Application.status == status)
+    if company is not None:
+        query = query.where(Application.company == company)
+    if position is not None:
+        query = query.where(Application.position == position)
+    if sort is not None:
+        if sort == "newest":
+            query = query.order_by(Application.created_at.desc())
+        elif sort == "oldest":
+            query = query.order_by(Application.created_at.asc())
 
-        query = query.offset(offset).limit(limit)
+    query = query.offset(offset).limit(limit)
         
-        result = await session.execute(query)
-        applications = result.scalars().all()
+    result = await session.execute(query)
+    applications = result.scalars().all()
 
-        return applications
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return applications
 
