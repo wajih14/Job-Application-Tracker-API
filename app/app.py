@@ -120,3 +120,52 @@ async def update_application_status(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/applications/")
+async def get_applications(
+    status: str | None = None,
+    company: str | None = None, 
+    position: str | None = None,
+    sort: str| None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    session: AsyncSession = Depends(get_async_session)):
+    try:
+        query = select(Application)
+        if status is not None:
+            query = query.where(Application.status == status)
+        if company is not None:
+            query = query.where(Application.company == company)
+        if position is not None:
+            query = query.where(Application.position == position)
+        if sort is not None:
+            if sort == "newest":
+                query = query.order_by(Application.created_at.desc())
+            elif sort == "oldest":
+                query = query.order_by(Application.created_at.asc())
+
+        if offset is not None:
+            query = query.offset(offset)
+
+        if limit is not None:
+            query = query.limit(limit)
+        
+        result = await session.execute(query)
+        applications = result.scalars().all()
+
+        applications_list = []
+        for application in applications:
+            applications_list.append({
+                "id": str(application.id),
+                "company": application.company,
+                "position": application.position,
+                "status": application.status,
+                "created_at": application.created_at.isoformat()
+            })
+        return {"applications": applications_list}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
