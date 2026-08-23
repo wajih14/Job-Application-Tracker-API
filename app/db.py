@@ -21,6 +21,8 @@ class Application(Base):
     status = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    issued_by = Column(String, nullable=True)  # Optional field for the issuer of the application
+
 engine = create_async_engine(DATABASE_URL)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
