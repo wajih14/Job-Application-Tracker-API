@@ -1,19 +1,9 @@
 from typing import Literal
-import uuid
 from fastapi import FastAPI, HTTPException, Depends, Query
 from app.schemas import AppSubmit, StatusUpdate, ApplicationResponse, ApplicationStatus
-from app.db import Application, create_db_and_tables, get_async_session
+from app.db import Application, get_async_session
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from contextlib import asynccontextmanager
-
-
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await create_db_and_tables()
-    yield
 
 
 app = FastAPI(lifespan=lifespan)
