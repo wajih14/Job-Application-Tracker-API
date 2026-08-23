@@ -10,6 +10,7 @@ class ApplicationStatus(str, Enum):
     REJECTED = "rejected"
     ACCEPTED = "accepted"
     SEEKING_TO_APPLY = "seeking to apply"
+    SPECIAL = "special"
 
 class AppSubmit(BaseModel):
     company: str = Field(min_length=2, description="The name of the company")
@@ -20,7 +21,7 @@ class StatusUpdate(BaseModel):
     status: ApplicationStatus
 
 class ApplicationResponse(BaseModel):
-    id: UUID
+    id: int
     company: str
     position: str
     status: ApplicationStatus

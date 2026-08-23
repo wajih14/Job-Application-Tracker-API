@@ -37,7 +37,7 @@ async def create_application(
 
 @app.delete("/applications/{application_id}", response_model=ApplicationResponse)
 async def delete_application(
-    application_id: uuid.UUID,
+    application_id: int,
     session: AsyncSession = Depends(get_async_session)
 ):
     result = await session.execute(select(Application).where(Application.id == application_id))
@@ -53,7 +53,7 @@ async def delete_application(
 
 @app.put("/applications/{application_id}", response_model=ApplicationResponse)
 async def update_application(
-    application_id: uuid.UUID,
+    application_id: int,
     new_application: AppSubmit,
     session: AsyncSession = Depends(get_async_session)
 ):
@@ -72,7 +72,7 @@ async def update_application(
 
 @app.patch("/applications/{application_id}", response_model=ApplicationResponse)
 async def update_application_status(
-    application_id: uuid.UUID,
+    application_id: int,
     new_status: StatusUpdate,
     session: AsyncSession = Depends(get_async_session)
 ):
@@ -88,7 +88,10 @@ async def update_application_status(
 
 
 @app.get("/applications/{application_id}", response_model=ApplicationResponse)
-async def get_application(application_id: uuid.UUID, session: AsyncSession = Depends(get_async_session)):
+async def get_application(
+    application_id: int, 
+    session: AsyncSession = Depends(get_async_session)
+):
     result = await session.execute(select(Application).where(Application.id == application_id))
     application = result.scalar_one_or_none()
 
@@ -113,11 +116,10 @@ async def get_applications(
         query = query.where(Application.company == company)
     if position is not None:
         query = query.where(Application.position == position)
-    if sort is not None:
-        if sort == "newest":
-            query = query.order_by(Application.created_at.desc())
-        elif sort == "oldest":
-            query = query.order_by(Application.created_at.asc())
+    if sort == "newest":
+        query = query.order_by(Application.created_at.desc())
+    elif sort == "oldest":
+        query = query.order_by(Application.created_at.asc())
 
     query = query.offset(offset).limit(limit)
         

@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator
 import uuid
 
-from sqlalchemy import Column, String, DateTime
+from sqlalchemy import Column, String, DateTime, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
@@ -15,7 +15,7 @@ class Base(DeclarativeBase):
 class Application(Base):
     __tablename__ = "applications"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     company = Column(String, nullable=False)
     position = Column(String, nullable=False)
     status = Column(String, nullable=False)
