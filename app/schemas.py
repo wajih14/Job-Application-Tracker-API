@@ -38,7 +38,6 @@ class PasswordCheck(BaseModel):
     password: str
 
 class UserSubmit(BaseModel):
-    id: int
     email: str
     password: str
 

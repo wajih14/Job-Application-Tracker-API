@@ -26,7 +26,7 @@ class Application(Base):
 class User(Base):
     __tablename__ = "Users"
 
-    id = Column(Integer,primary_key= True)
+    id = Column(Integer,primary_key= True, autoincrement=True)
     email = Column(String, nullable = False, unique= True)
     hashed_password = Column(String, nullable = False)
 

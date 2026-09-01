@@ -195,7 +195,6 @@ async def create_user(
     session: AsyncSession = Depends(get_async_session)
 ):
     new_user = User(
-        id = user.id,
         email = user.email,
         hashed_password = password_hash.hash(user.password)
     )
@@ -203,9 +202,9 @@ async def create_user(
     await session.commit()
     await session.refresh(new_user)
     return UserResponse(
-            id= user.id,
-            email= user.email,
-            logged_in= True
+            id= new_user.id,
+            email= new_user.email,
+            logged_in= False
         )
 
 @app.get("/users/me",response_model=UserResponse)
