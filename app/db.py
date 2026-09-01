@@ -23,6 +23,13 @@ class Application(Base):
 
     issued_by = Column(String, nullable=True)  # Optional field for the issuer of the application
 
+class User(Base):
+    __tablename__ = "Users"
+
+    id = Column(Integer,primary_key= True)
+    email = Column(String, nullable = False, unique= True)
+    hashed_password = Column(String, nullable = False)
+
 engine = create_async_engine(DATABASE_URL)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 

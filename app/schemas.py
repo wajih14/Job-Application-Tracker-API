@@ -28,3 +28,20 @@ class ApplicationResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    logged_in: bool
+
+class PasswordCheck(BaseModel):
+    password: str
+
+class UserSubmit(BaseModel):
+    id: int
+    email: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
