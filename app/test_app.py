@@ -35,7 +35,7 @@ def auth_headers():
         "password": "duck test"
     })
 
-    login_response = client.post("/user", data={
+    login_response = client.post("/users/login", data={
         "username": "duck@sisyphos.com",
         "password": "duck test"
     })
@@ -53,7 +53,7 @@ def auth_headers2():
         "password": "another duck test"
     })
 
-    login_response = client.post("/user", data={
+    login_response = client.post("/users/login", data={
         "username": "anotherduck@sisyphos.com",
         "password": "another duck test"
     })
