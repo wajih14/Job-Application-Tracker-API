@@ -26,6 +26,7 @@ class ApplicationResponse(BaseModel):
     position: str
     status: ApplicationStatus
     created_at: datetime
+    owner_id: int
 
     model_config = ConfigDict(from_attributes=True)
 

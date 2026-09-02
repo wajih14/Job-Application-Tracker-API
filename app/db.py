@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator
 import uuid
 
-from sqlalchemy import Column, String, DateTime, Integer
+from sqlalchemy import Column, String, DateTime, Integer, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
@@ -21,7 +21,7 @@ class Application(Base):
     status = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    issued_by = Column(String, nullable=True)  # Optional field for the issuer of the application
+    owner_id = Column(Integer, ForeignKey("Users.id", ondelete="CASCADE"), nullable=False)
 
 class User(Base):
     __tablename__ = "Users"

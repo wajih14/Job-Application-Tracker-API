@@ -63,12 +63,14 @@ app = FastAPI()
 @app.post("/applications", response_model=ApplicationResponse)
 async def create_application(
     application: AppSubmit,
+    current_user : Annotated[User, Depends(get_current_user)],
     session: AsyncSession = Depends(get_async_session)
 ):
     new_application = Application(
         company=application.company,
         position=application.position,
-        status=application.status
+        status=application.status,
+        owner_id = current_user.id
     )
     session.add(new_application)
     await session.commit()
@@ -78,10 +80,11 @@ async def create_application(
 
 @app.delete("/applications/{application_id}", response_model=ApplicationResponse)
 async def delete_application(
+    current_user : Annotated[User, Depends(get_current_user)],
     application_id: int,
     session: AsyncSession = Depends(get_async_session)
 ):
-    result = await session.execute(select(Application).where(Application.id == application_id))
+    result = await session.execute(select(Application).where(Application.id == application_id).where(Application.owner_id == current_user.id))
     application = result.scalar_one_or_none()
 
     if not application:
@@ -94,11 +97,12 @@ async def delete_application(
 
 @app.put("/applications/{application_id}", response_model=ApplicationResponse)
 async def update_application(
+    current_user : Annotated[User, Depends(get_current_user)],
     application_id: int,
     new_application: AppSubmit,
     session: AsyncSession = Depends(get_async_session)
 ):
-    result = await session.execute(select(Application).where(Application.id == application_id))
+    result = await session.execute(select(Application).where(Application.id == application_id).where(Application.owner_id == current_user.id))
     application = result.scalar_one_or_none()
 
     if not application:
@@ -113,11 +117,12 @@ async def update_application(
 
 @app.patch("/applications/{application_id}", response_model=ApplicationResponse)
 async def update_application_status(
+    current_user : Annotated[User, Depends(get_current_user)],
     application_id: int,
     new_status: StatusUpdate,
     session: AsyncSession = Depends(get_async_session)
 ):
-    result = await session.execute(select(Application).where(Application.id == application_id))
+    result = await session.execute(select(Application).where(Application.id == application_id).where(Application.owner_id == current_user.id))
     application = result.scalar_one_or_none()
 
     if not application:
@@ -130,10 +135,11 @@ async def update_application_status(
 
 @app.get("/applications/{application_id}", response_model=ApplicationResponse)
 async def get_application(
-    application_id: int, 
+    current_user : Annotated[User, Depends(get_current_user)],
+    application_id: int,
     session: AsyncSession = Depends(get_async_session)
 ):
-    result = await session.execute(select(Application).where(Application.id == application_id))
+    result = await session.execute(select(Application).where(Application.id == application_id).where(Application.owner_id == current_user.id))
     application = result.scalar_one_or_none()
 
     if not application:
@@ -143,6 +149,7 @@ async def get_application(
 
 @app.get("/applications", response_model=list[ApplicationResponse])
 async def get_applications(
+    current_user : Annotated[User, Depends(get_current_user)],
     status: ApplicationStatus | None = None,
     company: str | None = None, 
     position: str | None = None,
@@ -150,7 +157,7 @@ async def get_applications(
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
     session: AsyncSession = Depends(get_async_session)):
-    query = select(Application)
+    query = select(Application).where(Application.owner_id == current_user.id)
     if status is not None:
         query = query.where(Application.status == status)
     if company is not None:
