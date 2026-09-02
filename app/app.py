@@ -181,9 +181,7 @@ async def login_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: AsyncSession = Depends(get_async_session)
 ):
-    if not form_data.username.isdigit():
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    query = await session.execute(select(User).where(User.id == int(form_data.username)))
+    query = await session.execute(select(User).where(User.email == form_data.username))
     user = query.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")

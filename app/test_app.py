@@ -29,18 +29,15 @@ async def clean_database(anyio_backend):
 
 @pytest.fixture
 def auth_headers():
-    password = "duck test"
 
-    user_response = client.post("/users", json={
+    client.post("/users", json={
         "email": "duck@sisyphos.com",
-        "password": password
+        "password": "duck test"
     })
 
-    user_id = user_response.json()["id"]
-
     login_response = client.post("/user", data={
-        "username": str(user_id),
-        "password": password
+        "username": "duck@sisyphos.com",
+        "password": "duck test"
     })
 
     token = login_response.json()["access_token"]
@@ -51,18 +48,14 @@ def auth_headers():
 
 @pytest.fixture
 def auth_headers2():
-    password = "another duck test"
-
-    user_response = client.post("/users", json={
+    client.post("/users", json={
         "email": "anotherduck@sisyphos.com",
-        "password": password
+        "password": "another duck test"
     })
 
-    user_id = user_response.json()["id"]
-
     login_response = client.post("/user", data={
-        "username": str(user_id),
-        "password": password
+        "username": "anotherduck@sisyphos.com",
+        "password": "another duck test"
     })
 
     token = login_response.json()["access_token"]
