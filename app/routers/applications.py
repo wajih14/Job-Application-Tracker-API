@@ -24,8 +24,8 @@ async def create_application(
         company=application.company,
         position=application.position,
         status=application.status,
-        owner_id = current_user.id
     )
+    new_application.owner = current_user
     session.add(new_application)
     await session.commit()
     await session.refresh(new_application)

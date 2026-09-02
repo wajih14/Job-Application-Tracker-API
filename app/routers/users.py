@@ -12,6 +12,7 @@ from app.auth import (
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from app.db import get_async_session, User
 
 from app.schemas import UserResponse, UserSubmit, Token
@@ -66,3 +67,6 @@ async def user_me(
         email=current_user.email,
         logged_in=True
     )
+
+
+
