@@ -1,5 +1,5 @@
 from typing import Annotated
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
@@ -29,7 +29,7 @@ async def login_user(
 ):
     query = await session.execute(select(User).where(User.email == form_data.username))
     user = query.scalar_one_or_none()
-    if not user:
+    if (not user) or (user.deleted_at is not None):
         raise HTTPException(status_code=401, detail="Unauthorized")
     if password_hash.verify(form_data.password, user.hashed_password):
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -45,6 +45,21 @@ async def create_user(
     user: UserSubmit,
     session: AsyncSession = Depends(get_async_session)
 ):
+
+    query = await session.execute(select(User).where(User.email == user.email))
+    existing_user = query.scalar_one_or_none()
+    if existing_user:
+        if existing_user.deleted_at is not None:
+            existing_user.hashed_password = password_hash.hash(user.password)
+            existing_user.deleted_at = None
+            await session.commit()
+            return UserResponse(
+                        id= existing_user.id,
+                        email= existing_user.email,
+                        logged_in= False
+                    )
+        raise HTTPException(status_code=409, detail="User already exist!")
+
     new_user = User(
         email = user.email,
         hashed_password = password_hash.hash(user.password)
@@ -68,5 +83,19 @@ async def user_me(
         logged_in=True
     )
 
+@router.delete("/me")
+async def delete_user_me(
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: AsyncSession = Depends(get_async_session)
+):
+    current_user.deleted_at = datetime.now()
+    await session.commit()
+
+    return {
+        "id" : current_user.id,
+        "email" : current_user.email,
+        "logged_in" : False,
+        "deleted_at" : current_user.deleted_at
+    }
 
 

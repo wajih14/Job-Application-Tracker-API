@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from app.app import app
 from app.db import Application, User, async_session_maker
 import pytest
@@ -260,3 +260,84 @@ def test_user_cannot_get_another_user_application(auth_headers, auth_headers2):
         )
 
     assert check_response.status_code == 404
+
+
+async def test_soft_deletion(auth_headers):
+
+    request = client.delete(
+        "users/me",
+        headers=auth_headers)
+
+    async with async_session_maker() as session:
+        data = await session.execute(select(User).where(User.email == "duck@sisyphos.com"))
+    user = data.scalar_one_or_none()
+    
+    access_after_delete = client.get(
+        "users/me",
+        headers=auth_headers)
+    login_after_delete = client.post(
+        "/users/login",
+        data={
+        "username": "duck@sisyphos.com",
+        "password": "duck test"
+        }
+    )
+    
+    assert login_after_delete.status_code == 401
+    assert request.status_code == 200
+    assert access_after_delete.status_code == 401
+    assert user.deleted_at is not None
+
+async def test_restore_user(auth_headers):
+    deleted_user = client.delete(
+        "users/me",
+        headers= auth_headers)
+    re_creation = client.post(
+        "/users", json={
+        "email": "duck@sisyphos.com",
+        "password": "restored with another password"
+    })
+
+    async with async_session_maker() as session:
+        data = await session.execute(select(User).where(User.email == "duck@sisyphos.com"))
+    user = data.scalar_one_or_none()
+
+    login_with_old_password = client.post(
+        "/users/login",
+        data={
+        "username": "duck@sisyphos.com",
+        "password": "duck test"
+        }
+    )
+
+    login_with_new_password = client.post(
+        "/users/login",
+        data={
+        "username": "duck@sisyphos.com",
+        "password": "restored with another password"
+        }
+    )
+
+    assert re_creation.status_code == 200
+    assert login_with_new_password.status_code == 200
+    assert login_with_old_password.status_code == 401
+    assert user.deleted_at == None
+    assert deleted_user.json()["id"] == user.id
+
+def test_rejection_of_recreating_existing_user():
+    client.post(
+            "/users",
+            json={
+                "email": "duck@sisyphos.com",
+                "password": "vibing"
+            }
+        )
+    re_creation_attempt = client.post(
+        "/users",
+        json={
+            "email": "duck@sisyphos.com",
+            "password": "still vibing"
+        }
+    )
+
+    assert re_creation_attempt.status_code == 409

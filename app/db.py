@@ -29,6 +29,7 @@ class User(Base):
     id = Column(Integer,primary_key= True, autoincrement=True)
     email = Column(String, nullable = False, unique= True)
     hashed_password = Column(String, nullable = False)
+    deleted_at = Column(DateTime, default = None)
 
     applications = relationship("Application", back_populates="owner")
 
